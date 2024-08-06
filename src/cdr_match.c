@@ -3,12 +3,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "kjv_data.h"
-#include "kjv_match.h"
+#include "cdr_data.h"
+#include "cdr_match.h"
 #include "intset.h"
 
 static bool
-kjv_verse_matches(const kjv_ref *ref, const kjv_verse *verse)
+cdr_verse_matches(const cdr_ref *ref, const cdr_verse *verse)
 {
     switch (ref->type) {
         case KJV_REF_SEARCH:
@@ -51,20 +51,20 @@ kjv_verse_matches(const kjv_ref *ref, const kjv_verse *verse)
 #define KJV_DIRECTION_AFTER 1
 
 static int
-kjv_chapter_bounds(int i, int direction, int maximum_steps)
+cdr_chapter_bounds(int i, int direction, int maximum_steps)
 {
     assert(direction == KJV_DIRECTION_BEFORE || direction == KJV_DIRECTION_AFTER);
 
     int steps = 0;
-    for ( ; 0 <= i && i < kjv_verses_length; i += direction) {
+    for ( ; 0 <= i && i < cdr_verses_length; i += direction) {
         bool step_limit = (maximum_steps != -1 && steps >= maximum_steps) ||
             (direction == KJV_DIRECTION_BEFORE && i == 0) ||
-            (direction == KJV_DIRECTION_AFTER && i + 1 == kjv_verses_length);
+            (direction == KJV_DIRECTION_AFTER && i + 1 == cdr_verses_length);
         if (step_limit) {
             break;
         }
 
-        const kjv_verse *current = &kjv_verses[i], *next = &kjv_verses[i + direction];
+        const cdr_verse *current = &cdr_verses[i], *next = &cdr_verses[i + direction];
         if (current->book != next->book || current->chapter != next->chapter) {
             break;
         }
@@ -74,11 +74,11 @@ kjv_chapter_bounds(int i, int direction, int maximum_steps)
 }
 
 static int
-kjv_next_match(const kjv_ref *ref, int i)
+cdr_next_match(const cdr_ref *ref, int i)
 {
-    for ( ; i < kjv_verses_length; i++) {
-        const kjv_verse *verse = &kjv_verses[i];
-        if (kjv_verse_matches(ref, verse)) {
+    for ( ; i < cdr_verses_length; i++) {
+        const cdr_verse *verse = &cdr_verses[i];
+        if (cdr_verse_matches(ref, verse)) {
             return i;
         }
     }
@@ -86,7 +86,7 @@ kjv_next_match(const kjv_ref *ref, int i)
 }
 
 static void
-kjv_next_addrange(kjv_next_data *next, kjv_range range) {
+cdr_next_addrange(cdr_next_data *next, cdr_range range) {
     if (next->matches[0].start == -1 && next->matches[0].end == -1) {
         next->matches[0] = range;
     } else if (range.start < next->matches[0].end) {
@@ -97,28 +97,28 @@ kjv_next_addrange(kjv_next_data *next, kjv_range range) {
 }
 
 int
-kjv_next_verse(const kjv_ref *ref, const kjv_config *config, kjv_next_data *next)
+cdr_next_verse(const cdr_ref *ref, const cdr_config *config, cdr_next_data *next)
 {
-    if (next->current >= kjv_verses_length) {
+    if (next->current >= cdr_verses_length) {
         return -1;
     }
 
     if (next->matches[0].start != -1 && next->matches[0].end != -1 && next->current >= next->matches[0].end) {
         next->matches[0] = next->matches[1];
-        next->matches[1] = (kjv_range){-1, -1};
+        next->matches[1] = (cdr_range){-1, -1};
     }
 
-    if ((next->next_match == -1 || next->next_match < next->current) && next->next_match < kjv_verses_length) {
-        int next_match = kjv_next_match(ref, next->current);
+    if ((next->next_match == -1 || next->next_match < next->current) && next->next_match < cdr_verses_length) {
+        int next_match = cdr_next_match(ref, next->current);
         if (next_match >= 0) {
             next->next_match = next_match;
-            kjv_range bounds = {
-                .start = kjv_chapter_bounds(next_match, KJV_DIRECTION_BEFORE, config->context_chapter ? -1 : config->context_before),
-                .end = kjv_chapter_bounds(next_match, KJV_DIRECTION_AFTER, config->context_chapter ? -1 : config->context_after) + 1,
+            cdr_range bounds = {
+                .start = cdr_chapter_bounds(next_match, KJV_DIRECTION_BEFORE, config->context_chapter ? -1 : config->context_before),
+                .end = cdr_chapter_bounds(next_match, KJV_DIRECTION_AFTER, config->context_chapter ? -1 : config->context_after) + 1,
             };
-            kjv_next_addrange(next, bounds);
+            cdr_next_addrange(next, bounds);
         } else {
-            next_match = kjv_verses_length;
+            next_match = cdr_verses_length;
         }
     }
 

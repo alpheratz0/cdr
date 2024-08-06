@@ -1,5 +1,5 @@
 /*
-kjv: Read the Word of God from your terminal
+cdr: Read the Word of God from your terminal
 
 License: Public domain
 */
@@ -13,14 +13,14 @@ License: Public domain
 #include <readline/history.h>
 #include <sys/ioctl.h>
 
-#include "kjv_config.h"
-#include "kjv_data.h"
-#include "kjv_ref.h"
-#include "kjv_render.h"
+#include "cdr_config.h"
+#include "cdr_data.h"
+#include "cdr_ref.h"
+#include "cdr_render.h"
 #include "strutil.h"
 
 const char *
-usage = "usage: kjv [flags] [reference...]\n"
+usage = "usage: cdr [flags] [reference...]\n"
     "\n"
     "Flags:\n"
     "  -A num  show num verses of context after matching verses\n"
@@ -59,7 +59,7 @@ int
 main(int argc, char *argv[])
 {
     bool is_atty = isatty(STDOUT_FILENO) == 1;
-    kjv_config config = {
+    cdr_config config = {
         .highlighting = is_atty,
         .pretty = is_atty,
 
@@ -79,14 +79,14 @@ main(int argc, char *argv[])
         case 'A':
             config.context_after = strtol(optarg, &endptr, 10);
             if (endptr[0] != '\0') {
-                fprintf(stderr, "kjv: invalid flag value for -A\n\n%s", usage);
+                fprintf(stderr, "cdr: invalid flag value for -A\n\n%s", usage);
                 return 1;
             }
             break;
         case 'B':
             config.context_before = strtol(optarg, &endptr, 10);
             if (endptr[0] != '\0') {
-                fprintf(stderr, "kjv: invalid flag value for -B\n\n%s", usage);
+                fprintf(stderr, "cdr: invalid flag value for -B\n\n%s", usage);
                 return 1;
             }
             break;
@@ -106,14 +106,14 @@ main(int argc, char *argv[])
             printf("%s", usage);
             return 0;
         case '?':
-            fprintf(stderr, "kjv: invalid flag -%c\n\n%s", optopt, usage);
+            fprintf(stderr, "cdr: invalid flag -%c\n\n%s", optopt, usage);
             return 1;
         }
     }
 
     if (list_books) {
-        for (int i = 0; i < kjv_books_length; i++) {
-            kjv_book *book = &kjv_books[i];
+        for (int i = 0; i < cdr_books_length; i++) {
+            cdr_book *book = &cdr_books[i];
             printf("%s (%s)\n", book->name, book->abbr);
         }
         return 0;
@@ -129,28 +129,28 @@ main(int argc, char *argv[])
     if (argc == optind) {
         using_history();
         while (true) {
-            char *input = readline("kjv> ");
+            char *input = readline("cdr> ");
             if (input == NULL) {
                 break;
             }
             add_history(input);
-            kjv_ref *ref = kjv_newref();
-            int success = kjv_parseref(ref, input);
+            cdr_ref *ref = cdr_newref();
+            int success = cdr_parseref(ref, input);
             free(input);
             if (success == 0) {
-                kjv_render(ref, &config);
+                cdr_render(ref, &config);
             }
-            kjv_freeref(ref);
+            cdr_freeref(ref);
         }
     } else {
         char *ref_str = str_join(argc-optind, &argv[optind]);
-        kjv_ref *ref = kjv_newref();
-        int success = kjv_parseref(ref, ref_str);
+        cdr_ref *ref = cdr_newref();
+        int success = cdr_parseref(ref, ref_str);
         free(ref_str);
         if (success == 0) {
-            kjv_render(ref, &config);
+            cdr_render(ref, &config);
         }
-        kjv_freeref(ref);
+        cdr_freeref(ref);
     }
 
     return 0;
